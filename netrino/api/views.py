@@ -104,11 +104,11 @@ class NetworkService(object):
 
     def get(self, req, resp, id=None):
         view = req.post.get('view', None)
-        if view == "datatable":
-            return api.get(modelapi.NetworkServices, req, resp, id)            
-        else:
+        if view == "old":
             result = getServices(sid=id)
             return json.dumps(result, indent=4)
+        else:
+            return api.get(modelapi.NetworkServices, req, resp, id)
 
     def post(self, req, resp):
         return api.post(modelapi.NetworkService, req)
@@ -132,13 +132,15 @@ class InterfaceGroup(object):
                        'network:admin')
         app.router.add(nfw.HTTP_PUT, '/infrastructure/network/igroups/{id}', self.put,
                        'network:admin')
+        app.router.add(nfw.HTTP_PUT, '/infrastructure/network/igroups/{id}/port',
+                       self.portigroup, 'network:admin')
         app.router.add(nfw.HTTP_DELETE, '/infrastructure/network/igroups/{id}', self.delete,
                        'network:admin')
 
     def get(self, req, resp, id=None):
         view = req.post.get('view', None)
         if id or view == "datatable":
-            #return api.get(modelapi.IGroups, req, resp, id)
+            # return api.get(modelapi.IGroups, req, resp, id)
             return api.sql_get("interface_groups", req, resp, id)
         else:
             return json.dumps(getIGroups(id, view), indent=4)
@@ -151,3 +153,7 @@ class InterfaceGroup(object):
 
     def delete(self, req, resp, id):
         return api.delete(modelapi.IGroup, req, id)
+
+    def portigroup(self, req, resp, id):
+        result = assignIGPort(req, id)
+        return json.dumps(result, indent=4)

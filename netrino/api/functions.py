@@ -539,15 +539,24 @@ def getSupernets(sid=None):
     return supernets
 
 
-def assignIGPort(values):
-    ip = values.get('ip')
-    port = values.get('port')
-    igid = values.get('igroupport')
+def assignIGPort(req, id):
+    values = json.loads(req.read())
+    port = values['port']
+    ip = values['device']
     db = nfw.Mysql()
-    sql = 'UPDATE device_port set igroup=%s WHERE ip=%s AND port=%s'
-    db.execute(sql, (igid, ip, port))
+    sql = 'UPDATE device_port set igroup=%s WHERE id=%s AND port=%s'
+    result = db.execute(sql, (id, ip, port))
     db.commit()
-    return ip
+    if result > 0:
+        port_igroup = {'id':port,
+                'igroup':id,
+                'device':ip}
+        return port_igroup
+    else:
+        raise nfw.HTTPError(nfw.HTTP_404, 'Port Interface group assignment failed',
+                        'Item not found %s' % (str(result),))
+
+
 
 rfc5735 = [IPNetwork('10.0.0.0/8')]
 rfc5735.append(IPNetwork('172.16.0.0/12'))
@@ -687,7 +696,7 @@ def viewSR(req, resp, id=None, view=None, onlyActive=False):
             key = 'service_requests.' + key.strip()
             w[key] = value.strip()
     if id:
-        w['service_requests.id'] = srid
+        w['service_requests.id'] = id
     if onlyActive:
         w['service_requests.status'] = 'ACTIVE'
     log.debug("MYDEBUG:\n%s\n%s" % (w.keys(), w.values()))
