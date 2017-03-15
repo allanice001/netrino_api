@@ -14,18 +14,20 @@ import thread
 import json
 
 
-# def getApp(req):
-#     celery = req.config.get('celery')
+def getLoggedInUser(req):
+    token = req.headers.get('X-Auth-Token', None)
+    if token:
+        db = nfw.Mysql()
+        sql = ('SELECT user_id,user.username ' +
+               'FROM token LEFT JOIN user ON ' +
+               'user_id=user.id WHERE token=%s')
+        result = db.execute(sql,(token,))
+        if result:
+            user_id = result[0]['user_id']
+            username = result[0]['username']
+            return {'user_id': user_id,
+                    'username': username} 
 
-#     app = nfw.Celery(celery.get('app'),
-#                  broker=celery.get('broker'),
-#                  backend=celery.get('backend'),
-#                  include=celery.get('include').split(','))
-
-#     app.conf.update(
-#         result_expires=celery.get('result_expires')
-#     )
-#     return app
 
 def addService(values, service_id):
     db = nfw.Mysql()
@@ -177,7 +179,9 @@ def discoverDevice(req, id=None):
 
     ip = dec2ip(id, 4)
     srid = addSR(device=id, snippet="Running discovery on " + ip)
-    task = addDevice.delay(host=ip, srid=srid, community=community)
+    loggedInUser = getLoggedInUser(req)
+    user = loggedInUser['username']
+    task = addDevice.delay(host=ip, user=user, srid=srid, community=community)
     if task:
         addSR(taskID=task.task_id, srid=srid)
         return {'Service Request': {'id': str(srid), 'task id': str(task.task_id)}}
@@ -370,7 +374,6 @@ def addSR(device=None, taskID=None, srid=None, customer=None,
                ' (id,device,customer,port,service,result,resources)' +
                ' VALUES (%s,%s,%s,%s,%s,%s,%s)')
         vals = (srid, device, customer, port, service, snippet, resources)
-    log.debug("MYDEBUG: %s" % (sql % vals,))
     db.execute(sql, vals)
     db.commit()
     return srid
@@ -767,7 +770,9 @@ def createSR(req):
     srid = addSR(device=deviceID, customer=customerID, port=port,
                  service=serviceID, snippet=snippet,
                  resources=json.dumps(resources))
-    task = confDevice.delay(deviceIP, user="dave",
+    loggedInUser = getLoggedInUser(req)
+    user = loggedInUser['username']
+    task = confDevice.delay(deviceIP, user=user,
                             snippet=snippet, srid=srid)
     addSR(taskID=task.id, srid=srid)
     result = {"Service Request ID": srid,
@@ -794,8 +799,10 @@ def activateSR(srid):
             db.execute(sql, (srid,))
             db.commit()
             deviceIP = dec2ip(int(device), 4)
-            task = confDevice.delay(
-                deviceIP, snippet=activation_snippet,
+            loggedInUser = getLoggedInUser(req)
+            user = loggedInUser['username']
+            task = confDevice.delay(deviceIP,
+                user=user, snippet=activation_snippet,
                 srid=srid, activate=True)
             addSR(taskID=task.task_id, srid=srid)
             return {"Service Request ID": srid,
@@ -830,8 +837,10 @@ def deactivateSR(srid):
             db.execute(sql, (srid,))
             db.commit()
             deviceIP = dec2ip(int(device), 4)
-            task = confDevice.delay(
-                deviceIP, snippet=deactivation_snippet,
+            loggedInUser = getLoggedInUser(req)
+            user = loggedInUser['username']
+            task = confDevice.delay(deviceIP,
+                user=user, snippet=deactivation_snippet,
                 srid=srid, deactivate=True)
             addSR(taskID=task.task_id, srid=srid)
             return {"Service Request ID": srid,

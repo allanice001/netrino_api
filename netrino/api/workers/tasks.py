@@ -29,7 +29,7 @@ class Port():  # TODO: this is not really nessecary, can remove this class and a
 
 
 @app.task
-def confDevice(host, user="dave", snippet=None, srid=None, activate=False, deactivate=False):
+def confDevice(host, user, snippet=None, srid=None, activate=False, deactivate=False):
     db = nfw.Mysql(host=mysql.get('host'),
                    database=mysql.get('database'),
                    username=mysql.get('username'),
@@ -88,7 +88,7 @@ def confDevice(host, user="dave", snippet=None, srid=None, activate=False, deact
 
 
 @app.task
-def addDevice(host, user="dave", srid=None, community=None):
+def addDevice(host, user, srid=None, community=None):
     db = nfw.Mysql(host=mysql.get('host'),
                    database=mysql.get('database'),
                    username=mysql.get('username'),
@@ -153,7 +153,7 @@ def addDevice(host, user="dave", srid=None, community=None):
             portresult = device.get_interfaces()
             if portresult:
                 db.execute(
-                    'UPDATE device_port SET present=0 where ip="%s"', (intIP,))
+                    'UPDATE device_port SET present=0 where id="%s"', (intIP,))
                 db.commit()
             for port in portresult:
                 sql = 'INSERT INTO device_port (id,port,descr,mac,present,igroup) VALUES (%s,%s,%s,%s,%s,NULL)'
