@@ -278,8 +278,6 @@ def getServices(req,resp,sid=None):
         w = {}
     rmap = {'services.*': ''}
     rmap['interface_groups.name'] = 'igroupname'
-    # result = mysqlLJ(rmap, 'services', {'interface_groups': {
-    #                  'services.interface_group': 'interface_groups.id'}}, w)
     ljo = OrderedDict()
     ljo['interface_groups'] = {
         'services.interface_group': 'interface_groups.id'}
