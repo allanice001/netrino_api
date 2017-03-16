@@ -171,13 +171,28 @@ def discoverDevice(req, id=None):
                                 "POST don't PUT")
     else:
         rvalues = json.loads(req.read())
-        id = int(rvalues['id'])
-        if deviceExists(id):
-            raise nfw.HTTPError(nfw.HTTP_404, 'Device already exists',
-                                "PUT don't POST")
-        community = rvalues['snmp_comm']
+        if not 'snmp_comm' in rvalues:
+            raise nfw.HTTPError(nfw.HTTP_404, "Missing required paramater",
+                                "Required paramater 'snmp_comm' not found")
+        elif not 'id' in rvalues:
+            raise nfw.HTTPError(nfw.HTTP_404, "Missing required paramater",
+                                "Required paramater 'id' not found")
+        else:
+            try:
+                id = int(rvalues['id'])
+            except:
+                raise nfw.HTTPError(nfw.HTTP_404, 'Invalid type',
+                                    "'id' must be integer")
+            if deviceExists(id):
+                raise nfw.HTTPError(nfw.HTTP_404, 'Device already exists',
+                                    "PUT don't POST")
+            community = rvalues['snmp_comm']
 
-    ip = dec2ip(id, 4)
+    try:
+        ip = dec2ip(id, 4)
+    except:
+        raise nfw.HTTPError(nfw.HTTP_404, 'Invalid type',
+                            "'id' is not a valid ip address")
     srid = addSR(device=id, snippet="Running discovery on " + ip)
     loggedInUser = getLoggedInUser(req)
     user = loggedInUser['username']
@@ -242,7 +257,6 @@ def mysqlLJ(s, f, ljo, w=None, g=None):
                 sql.append(',')
             sql.append(g[i])
     db = nfw.Mysql()
-    #print(' '.join(sql) % vals,file=sys.stderr)
     results = db.execute(' '.join(sql), vals)
     resources = []
     for result in results:
@@ -256,28 +270,34 @@ def mysqlLJ(s, f, ljo, w=None, g=None):
     return resources
 
 
-def getServices(sid=None):
+def getServices(req,resp,sid=None):
     db = nfw.Mysql()
     if sid:
         w = {'services.id': sid}
     else:
-        w = None
+        w = {}
     rmap = {'services.*': ''}
     rmap['interface_groups.name'] = 'igroupname'
-    result = mysqlLJ(rmap, 'services', {'interface_groups': {
-                     'services.interface_group': 'interface_groups.id'}}, w)
-    nresults = len(result)
-    services = {}
-    if nresults > 0:
-        for i in range(nresults):
-            services[str(result[i]['id'])] = {'name': result[i]['name'],
-                                              'igroupname': result[i]['igroupname'],
-                                              'igroup': result[i]['interface_group'],
-                                              'urole': result[i]['user_role'],
-                                              'snippet': result[i]['config_snippet'],
-                                              'activate': result[i]['activate_snippet'],
-                                              'deactivate': result[i]['deactivate_snippet'],
-                                              'fields': result[i]['fields']}
+    # result = mysqlLJ(rmap, 'services', {'interface_groups': {
+    #                  'services.interface_group': 'interface_groups.id'}}, w)
+    ljo = OrderedDict()
+    ljo['interface_groups'] = {
+        'services.interface_group': 'interface_groups.id'}
+    left_join = api.LeftJoin(rmap, ljo)
+    results = api.sql_get_query(
+        'services', req, resp, None, where=w.keys(),
+        where_values=w.values(), left_join=left_join)
+    services = []
+    for result in results:
+        services.append({'id': result['id'],
+                         'name': result['name'],
+                         'interface_group': result['igroupname'],
+                         'igroup': result['interface_group'],
+                         'user_role': result['user_role'],
+                         'snippet': result['config_snippet'],
+                         'activate': result['activate_snippet'],
+                         'deactivate': result['deactivate_snippet'],
+                         'fields': result['fields']})
     return services
 
 

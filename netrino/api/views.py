@@ -104,8 +104,8 @@ class NetworkService(object):
 
     def get(self, req, resp, id=None):
         view = req.post.get('view', None)
-        if view == "old":
-            result = getServices(sid=id)
+        if view == "datatable":
+            result = getServices(req,resp,sid=id)
             return json.dumps(result, indent=4)
         else:
             return api.get(modelapi.NetworkServices, req, resp, id)
