@@ -43,11 +43,11 @@ class ServiceRequests(object):
         return json.dumps(result, indent=4)
 
     def put(self, req, resp, id):
-        result = activateSR(srid=id)
+        result = activateSR(req, srid=id)
         return json.dumps(result, indent=4)
 
     def delete(self, req, resp, id):
-        result = deactivateSR(srid=id)
+        result = deactivateSR(req, srid=id)
         return json.dumps(result, indent=4)
 
 

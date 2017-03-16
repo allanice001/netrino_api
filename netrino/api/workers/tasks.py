@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 from netrino.api.functions import *
 from netrino.api.netrino_celery import *
 import sys
@@ -6,7 +5,7 @@ import os
 import warnings
 import nfw
 import re
-from ncclient import manager
+#from ncclient import manager
 import napalm
 from easysnmp import Session
 from pyipcalc import *
@@ -41,7 +40,7 @@ def confDevice(host, user, snippet=None, srid=None, activate=False, deactivate=F
         f.close()
     args = {'host': host, 'port': 22, 'username': user}
     sql = 'SELECT os FROM device where id=%s'
-    result = db.execute(sql, (ip2dec(host,4),))
+    result = db.execute(sql, (ip2dec(host, 4),))
     if len(result) > 0:
         os = result[0]['os'].lower()
         if os == 'ios' and not re.search(r'\nend$', snippet):
@@ -49,8 +48,9 @@ def confDevice(host, user, snippet=None, srid=None, activate=False, deactivate=F
             f.write('\nend')
             f.close()
         driver = napalm.get_network_driver(os)
+        private_key = "/tmp/%s.key" % (user,)
         device = driver(hostname=host, username=user, password='', optional_args={
-                        "allow_agent": True, "ssh_private_key_file": "/tmp/pete.key"})
+                        "allow_agent": True, "ssh_private_key_file": private_key})
         try:
             device.open()
             device.load_merge_candidate(filename=filename)
@@ -142,8 +142,9 @@ def addDevice(host, user, srid=None, community=None):
     args = {'host': host, 'port': 22, 'username': user}
     if os:
         driver = napalm.get_network_driver(os)
-        device = driver(hostname=host, username=user, password='',
-                        optional_args={"allow_agent": True})
+        private_key = "/tmp/%s.key" % (user,)
+        device = driver(hostname=host, username=user, password='', optional_args={
+                        "allow_agent": True, "ssh_private_key_file": private_key})
         try:
             device.open()
         except Exception, e:

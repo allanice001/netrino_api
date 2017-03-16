@@ -21,12 +21,12 @@ def getLoggedInUser(req):
         sql = ('SELECT user_id,user.username ' +
                'FROM token LEFT JOIN user ON ' +
                'user_id=user.id WHERE token=%s')
-        result = db.execute(sql,(token,))
+        result = db.execute(sql, (token,))
         if result:
             user_id = result[0]['user_id']
             username = result[0]['username']
             return {'user_id': user_id,
-                    'username': username} 
+                    'username': username}
 
 
 def addService(values, service_id):
@@ -277,7 +277,7 @@ def getServices(sid=None):
                                               'snippet': result[i]['config_snippet'],
                                               'activate': result[i]['activate_snippet'],
                                               'deactivate': result[i]['deactivate_snippet'],
-                                              'fields':result[i]['fields']}
+                                              'fields': result[i]['fields']}
     return services
 
 
@@ -551,14 +551,13 @@ def assignIGPort(req, id):
     result = db.execute(sql, (id, ip, port))
     db.commit()
     if result > 0:
-        port_igroup = {'id':port,
-                'igroup':id,
-                'device':ip}
+        port_igroup = {'id': port,
+                       'igroup': id,
+                       'device': ip}
         return port_igroup
     else:
         raise nfw.HTTPError(nfw.HTTP_404, 'Port Interface group assignment failed',
-                        'Item not found %s' % (str(result),))
-
+                            'Item not found %s' % (str(result),))
 
 
 rfc5735 = [IPNetwork('10.0.0.0/8')]
@@ -780,7 +779,7 @@ def createSR(req):
     return result
 
 
-def activateSR(srid):
+def activateSR(req, srid):
     db = nfw.Mysql()
     sql = 'SELECT service,resources,device FROM service_requests WHERE id=%s'
     result = db.execute(sql, (srid,))
@@ -802,8 +801,8 @@ def activateSR(srid):
             loggedInUser = getLoggedInUser(req)
             user = loggedInUser['username']
             task = confDevice.delay(deviceIP,
-                user=user, snippet=activation_snippet,
-                srid=srid, activate=True)
+                                    user=user, snippet=activation_snippet,
+                                    srid=srid, activate=True)
             addSR(taskID=task.task_id, srid=srid)
             return {"Service Request ID": srid,
                     "Task ID": task.id}
@@ -818,7 +817,7 @@ def activateSR(srid):
                             'Service request not found: %s' % (srid,))
 
 
-def deactivateSR(srid):
+def deactivateSR(req, srid):
     db = nfw.Mysql()
     sql = 'SELECT service,resources,device FROM service_requests WHERE id=%s'
     result = db.execute(sql, (srid,))
@@ -840,8 +839,8 @@ def deactivateSR(srid):
             loggedInUser = getLoggedInUser(req)
             user = loggedInUser['username']
             task = confDevice.delay(deviceIP,
-                user=user, snippet=deactivation_snippet,
-                srid=srid, deactivate=True)
+                                    user=user, snippet=deactivation_snippet,
+                                    srid=srid, deactivate=True)
             addSR(taskID=task.task_id, srid=srid)
             return {"Service Request ID": srid,
                     "Task ID": task.id}
