@@ -140,7 +140,7 @@ def viewDevicePorts(req, resp, ip, view=None):
     else:
         rmap = {}
         rmap['interface_groups.name'] = 'igroupname'
-        rmap['customers.name'] = 'customername'
+        rmap['tenant.name'] = 'customername'
         rmap['services.name'] = 'service'
         ljo = OrderedDict()
         left_join = api.LeftJoin(rmap, ljo)
@@ -148,7 +148,7 @@ def viewDevicePorts(req, resp, ip, view=None):
                                                                                                          'device_port.id': 'srport.device'}
         ljo['(select id,customer,service FROM service_requests WHERE status in ("SUCCESS","ACTIVE") ) srrest'] = {
             'srrest.id': 'srid'}
-        ljo['customers'] = {'srrest.customer': 'customers.id'}
+        ljo['tenant'] = {'srrest.customer': 'tenant.id'}
         ljo['interface_groups'] = {'device_port.igroup': 'interface_groups.id'}
         ljo['services'] = {'srrest.service': 'services.id'}
         where = "device_port.id"
@@ -721,10 +721,10 @@ def viewSR(req, resp, id=None, view=None, onlyActive=False):
         w['service_requests.status'] = 'ACTIVE'
     log.debug("MYDEBUG:\n%s\n%s" % (w.keys(), w.values()))
     rmap = {}
-    rmap['customers.name'] = 'customer_name'
+    rmap['tenant.name'] = 'customer_name'
     rmap['services.name'] = 'service_name'
     ljo = OrderedDict()
-    ljo['customers'] = {'service_requests.customer': 'customers.id'}
+    ljo['tenant'] = {'service_requests.customer': 'tenant.id'}
     ljo['services'] = {'services.id': 'service_requests.service'}
     left_join = api.LeftJoin(rmap, ljo)
     results = api.sql_get_query(
@@ -757,10 +757,10 @@ def viewSR(req, resp, id=None, view=None, onlyActive=False):
                         'result': result['result'],
                         'service': result['service_name'],
                         'status': status})  # TODO User that created the SR
-    if len(srs) == 1:
-        return srs[0]
-    else:
-        return srs
+    # if len(srs) == 1:
+    #     return srs[0]
+    # else:
+    return srs
 
 
 def createSR(req):

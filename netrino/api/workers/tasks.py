@@ -104,7 +104,6 @@ def addDevice(host, user, srid=None, community=None):
             sql = 'UPDATE service_requests SET result="%s",status="UNKNOWN" where id="%s"'
             db.execute(sql, (str(e), srid))
             db.commit()
-        print(sql % (str(e), srid))
         sys.exit(0)
 
     isCisco = re.match(
